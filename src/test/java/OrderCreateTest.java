@@ -13,13 +13,14 @@ import static org.junit.Assert.*;
 @RunWith(Parameterized.class)
 public class OrderCreateTest {
 
-    private final Orders orders;
+    private final String[] color;
     private final int expectedCodResponse;
 
     public CourierClient courierClient;
+    public Orders orders;
 
-    public OrderCreateTest (Orders orders, int expectedCodResponse){
-        this.orders=orders;
+    public OrderCreateTest (String[] color, int expectedCodResponse){
+        this.color=color;
         this.expectedCodResponse=expectedCodResponse;
     }
 
@@ -31,9 +32,10 @@ public class OrderCreateTest {
     }
 
 
-    @DisplayName("Сделать заказ - параметризация")
+    @DisplayName("Сделать заказ с различными цветами - параметризация")
     @Test
     public void orderCreateWithColor (){
+        orders = Orders.newOrder(color);
         Response response = courierClient.orders(orders);
         int actualCodResponse = response.statusCode();
         assertEquals("Error", expectedCodResponse, actualCodResponse);
@@ -43,18 +45,18 @@ public class OrderCreateTest {
     @Parameterized.Parameters
     public static Object[][] dataGen() {
         return new Object[][]{
-                {new Orders("test","test","test","test","test",6,"test","test", new String[]{"GREY"}),201},
-                {new Orders("test","test","test","test","test",6,"test","test", new String[]{"BLACK"}),201},
-                {new Orders("test","test","test","test","test",6,"test","test", new String[]{"GREY","BLACK"}),201},
-                {new Orders("test","test","test","test","test",6,"test","test", new String[]{}),201}
+                {new String[]{"GREY"},201},
+                {new String[]{"BlACK"},201},
+                {new String[]{"GREY","BlACK"},201},
+                {new String[]{},201}
         };
     }
 
     @DisplayName("Создание заказа, в ответе есть track")
     @Test
     public void orderCreate(){
-        Response response1 = courierClient.orders(orders);
-        int isTrack = response1.then().extract().path("track");
+        Response response = courierClient.orders(orders);
+        int isTrack = response.then().extract().path("track");
         assertThat("Orders is not create, not found track",isTrack,is(not(0)));
     }
 }

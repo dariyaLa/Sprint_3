@@ -1,3 +1,4 @@
+import com.github.javafaker.Faker;
 import io.qameta.allure.junit4.DisplayName;
 import io.restassured.response.Response;
 import org.junit.After;
@@ -16,7 +17,7 @@ public class CourierAuthTest {
     private int courierId;
     private Response response;
     private boolean isCourierCreated = true;
-
+    private Faker faker = new Faker();
 
     @Before
     public void setUp() {
@@ -31,7 +32,7 @@ public class CourierAuthTest {
         courierClient.delete(courierId);
     }
 
-    @DisplayName("Курьер может авторизоваться")
+    @DisplayName("Курьер может авторизоваться, успешный запрос возвращает id")
     @Test
     public void courierAuthSuccessTest(){
         courierId = courierClient.login(CourierCredentials.from(courier)).then().extract().path("id");
@@ -41,53 +42,39 @@ public class CourierAuthTest {
 
     @DisplayName("Cистема вернёт ошибку, если неправильно указать логин или пароль")
     @Test
-    public void courierAuthFailedTest(){
-        String passwordIncorect = "00000";
+    public void courierAuthFailedWithIncorrectPasswordTest(){
+        String passwordIncorect = faker.number().digits(10);
         String messageAccNotFound = "Учетная запись не найдена";
         Response responsepasswordFailed = courierClient.login(CourierCredentials.from(new Courier(courier.login,passwordIncorect,courier.firstName)));
         assertEquals("Error",messageAccNotFound,responsepasswordFailed.then().extract().path("message"));
         courierId = courierClient.login(CourierCredentials.from(courier)).then().extract().path("id");
-        assertThat("Courier auth failed",courierId, is(not(0)));
-
     }
 
 
     @DisplayName("Если какого-то поля нет, запрос возвращает ошибку")
     @Test
-    public void courierAuthFailedNotAllDataTest(){
+    public void courierAuthFailedWithoutPasswordTest(){
         String messageNotAllData = "Недостаточно данных для входа";
         Response response = courierClient.login(CourierCredentials.from(new Courier(courier.password)));
         assertEquals("Error",messageNotAllData, response.then().extract().path("message"));
         courierId = courierClient.login(CourierCredentials.from(courier)).then().extract().path("id");
-        assertThat("Courier auth failed",courierId, is(not(0)));
     }
 
 
 
     @DisplayName("Если авторизоваться под несуществующим пользователем, запрос возвращает ошибку")
     @Test
-    public void courierAuthNonexistentCourierTest(){
-        String loginNonexistentCourier = "00000";
-        String passwordNonexistentCourier = "00000";
-        String firstNameNonexistentCourier = "00000";
+    public void courierAuthFailedNonExistentCourierTest(){
+        String loginNonExistentCourier = faker.name().username();
+        String passwordNonExistentCourier = faker.number().digits(10);
+        String firstNameNonExistentCourier = faker.name().firstName();
         String messageAccNotFound = "Учетная запись не найдена";
-        Courier courierNonexistent = new Courier(loginNonexistentCourier,passwordNonexistentCourier,firstNameNonexistentCourier);
-        Response response = courierClient.login(CourierCredentials.from(courierNonexistent));
+        Courier courierNonExistent = new Courier(loginNonExistentCourier,passwordNonExistentCourier,firstNameNonExistentCourier);
+        Response response = courierClient.login(CourierCredentials.from(courierNonExistent));
         assertEquals("Error",messageAccNotFound,response.then().extract().path("message"));
         courierId = courierClient.login(CourierCredentials.from(courier)).then().extract().path("id");
-        assertThat("Courier auth failed",courierId, is(not(0)));
 
     }
-
-
-    @DisplayName("Успешный запрос возвращает id")
-    @Test
-    public void courierLoginTest(){
-        courierId = courierClient.login(CourierCredentials.from(courier)).then().extract().path("id");
-        assertThat("Courier id is incorrect",courierId,is(not(0)));
-
-    }
-
 
 
 }

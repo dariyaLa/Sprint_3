@@ -1,8 +1,11 @@
 package ru.yandex.practikum.model;
 
 
+import org.apache.commons.lang3.RandomStringUtils;
+
 public class Orders {
 
+    public static int maxHoursRent = 24;
     public String firstName;
     public String lastName;
     public String address;
@@ -25,5 +28,17 @@ public class Orders {
         this.color = color;
     }
 
+    public static Orders newOrder(String[] setColor){
+        String firstName = RandomStringUtils.randomAlphabetic(5);
+        String lastName = RandomStringUtils.randomAlphabetic(5);
+        String address = RandomStringUtils.randomAlphabetic(5);
+        String metroStation = RandomStringUtils.randomAlphabetic(5);
+        String phone = RandomStringUtils.randomAlphabetic(11);
+        int rentTime = (int) (Math.random() * ++maxHoursRent);
+        String deliveryDate = RandomStringUtils.randomAlphabetic(5);
+        String comment = RandomStringUtils.randomAlphabetic(5);
+        String[] color = setColor;
+        return new Orders(firstName,lastName,address,metroStation,phone,rentTime,deliveryDate,comment,color);
+    }
 
 }

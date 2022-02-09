@@ -7,16 +7,15 @@ import static io.restassured.RestAssured.given;
 
 public class CourierClient extends CourierRestClient{
 
-    public final String PATH = BASE_URL + "/courier/";
-    public final String PATH2 = BASE_URL + "/orders/";
+    public final String COURIER_PATH = BASE_URL + "/courier/";
+    public final String ORDERS_PATH = BASE_URL + "/orders/";
 
     public Response create (Courier courier){
         Response response = given()
                 .spec(getBaseSpec())
-                .log().all()
                 .body(courier)
                 .when()
-                .post(PATH);
+                .post(COURIER_PATH);
         return response;
     }
 
@@ -25,16 +24,29 @@ public class CourierClient extends CourierRestClient{
                 .spec(getBaseSpec())
                 .body(courierCredentials)
                 .when()
-                .post(PATH+"login");
+                .post(COURIER_PATH+"login");
+        return response;
+    }
+
+    public int loginGetId (CourierCredentials courierCredentials){
+        int response = given()
+                .spec(getBaseSpec())
+                .body(courierCredentials)
+                .when()
+                .post(COURIER_PATH+"login")
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .extract()
+                .path("id");
         return response;
     }
 
     public boolean delete (int courierId){
         return  given()
                 .spec(getBaseSpec())
-                .log().all()
                 .when()
-                .delete(PATH+courierId)
+                .delete(COURIER_PATH+courierId)
                 .then()
                 .assertThat()
                 .statusCode(200)
@@ -46,32 +58,18 @@ public class CourierClient extends CourierRestClient{
         Response response = given()
                 .spec(getBaseSpec())
                 .when()
-                .post(PATH2);
+                .post(ORDERS_PATH);
         return  response;
     }
 
     public Response getOrders (){
         Response response = given()
                 .spec(getBaseSpec())
-                .log().all()
                 .when()
-                .get(PATH2);
+                .get(ORDERS_PATH);
         return  response;
     }
 
 
-    public void deleteCourier (Courier courier){
-        CourierClient courierClient = new CourierClient();
-        Response responseLogin = courierClient.login(CourierCredentials.from(courier));
-        try
-        {responseLogin.then().extract().path("id");}
-        catch(Exception exception)
-        {System.out.println("Login failed");}
-        try{
-            int courierId = responseLogin.then().extract().path("id");
-            courierClient.delete(courierId);}
-        catch(Exception exception)
-        {System.out.println("Courier not delete");}
-    }
 
 }
