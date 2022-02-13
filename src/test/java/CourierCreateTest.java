@@ -1,9 +1,9 @@
 import com.github.javafaker.Faker;
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 import io.qameta.allure.junit4.DisplayName;
 import io.restassured.response.Response;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import ru.yandex.practikum.model.Courier;
@@ -15,12 +15,15 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 
 
+
 public class CourierCreateTest {
 
     private Faker faker = new Faker();
     private CourierClient courierClient;
     private Courier courier;
-    private Courier courierDouble;
+    private int expectedCodResponseCreatedCourierSuccess = 201;
+    private int actualCodResponseCreatedCourier;
+    private Response response;
     private String testLogin = faker.name().username();
     private String password = faker.number().digits(10);
     private String firstName = faker.name().firstName();
@@ -32,88 +35,91 @@ public class CourierCreateTest {
     @Before
     public void setUp(){
         courierClient =  new CourierClient();
-        courier = new Courier (testLogin,password,firstName);
-        courierDouble = new Courier (testLogin,password,firstName);
+        courier = Courier.getRandom();
+        //courierDoubleOne = new Courier (testLogin,password,firstName);
+        //courierDoubleTwo = new Courier (testLogin,password,firstName);
     }
 
+    @After
+    public void tearDown(){
+        actualCodResponseCreatedCourier = response.statusCode();
+        if (actualCodResponseCreatedCourier == expectedCodResponseCreatedCourierSuccess){
+            int courierId = courierClient.login(CourierCredentials.from(courier)).then().extract().path("id");
+            courierClient.delete(courierId);}
+    }
 
+    @Test
     @DisplayName("Курьера можно создать")
-    @Test
-    public void courierCreateSuccessTest(){
-        Courier courier = Courier.getRandom();
-        Response response = courierClient.create(courier);
+    public void courierCreateSuccessTest() {
+        response = courierClient.create(courier);
         boolean isCourierCreated = true;
-        assertEquals("Courier is not create",isCourierCreated,response.then().extract().path("ok"));
-        courierClient.delete(courierClient.login(CourierCredentials.from(courier)).then().extract().path("id"));
+        assertEquals("Courier is not create", isCourierCreated, response.then().extract().path("ok"));
     }
 
 
-    @DisplayName("Нельзя создать двух одинаковых курьеров")
+
     @Test
+    @DisplayName("Нельзя создать двух одинаковых курьеров")
     public void courierFailedCreateDoubleCourierTest(){
         String messageDoubleCourier = "Этот логин уже используется";
-        Response response = courierClient.create(courier);
-        Response responseDouble = courierClient.create(courierDouble);
-        assertEquals("Courier is not create",messageDoubleCourier,responseDouble.then().extract().path("message"));
-        courierClient.delete(courierClient.login(CourierCredentials.from(courier)).then().extract().path("id"));
+        response = courierClient.create(courier);
+        Response responseCreateDoubleCourier = courierClient.create(new Courier(courier.login,courier.password,courier.firstName));
+        assertEquals("Courier is not create",messageDoubleCourier,responseCreateDoubleCourier.then().extract().path("message"));
     }
 
 
-    @DisplayName("Чтобы создать курьера, нужно передать в ручку все обязательные поля")
+
     @Test
+    @DisplayName("Чтобы создать курьера, нужно передать в ручку все обязательные поля")
     public void courierCreateWithRequiredFieldsTest(){
-        Courier courier = Courier.getRandomRequiredFields();
-        Response response = courierClient.create(courier);
+        courier = Courier.getRandomRequiredFields();
+        response = courierClient.create(courier);
         boolean isCourierCreated = true;
         assertEquals("Courier is not create",isCourierCreated,response.then().extract().path("ok"));
-        courierClient.delete(courierClient.login(CourierCredentials.from(courier)).then().extract().path("id"));
     }
 
 
+
+    @Test
     @DisplayName("Запрос возвращает правильный код ответа")
-    @Test
     public void courierCreateSuccessCorrectCodResponseTest(){
-        Courier courier = Courier.getRandom();
-        int codResponse=201;
-        Response response = courierClient.create(courier);
-        assertEquals("Courier is not create, response cod not 201",codResponse,response.statusCode());
-        courierClient.delete(courierClient.login(CourierCredentials.from(courier)).then().extract().path("id"));
+        int codResponseSuccessCreate=201;
+        response = courierClient.create(courier);
+        assertEquals("Courier is not create, response cod not 201",codResponseSuccessCreate,response.statusCode());
     }
 
 
-    @DisplayName("Курьера можно создать. Тело ответа ok:true")
+
     @Test
+    @DisplayName("Курьера можно создать. Тело ответа ok:true")
     public void courierCreateSuccessTrueInResponseTest(){
-        Courier courier = Courier.getRandom();
         mapExpected.put("ok", true);
-        Response response = courierClient.create(courier);
+        response = courierClient.create(courier);
         mapActual = new Gson().fromJson(response.body().asString(),mapExpected.getClass());
         assertEquals("Courier is not create",mapExpected,mapActual);
-        courierClient.delete(courierClient.login(CourierCredentials.from(courier)).then().extract().path("id"));
     }
 
 
-    @DisplayName("Если одного из полей нет, запрос возвращает ошибку")
     @Test
+    @DisplayName("Если одного из полей нет, запрос возвращает ошибку")
     public void courierFailedCreateWithNotAllRequiredFiedsTest(){
         String courierCreateWithNotAllRequiredFieds = "Недостаточно данных для создания учетной записи";
-        Courier courier = new Courier("",RandomStringUtils.randomAlphabetic(10),RandomStringUtils.randomAlphabetic(10));
-        Response response = courierClient.create(courier);
+        courier = new Courier("",RandomStringUtils.randomAlphabetic(10),RandomStringUtils.randomAlphabetic(10));
+        response = courierClient.create(courier);
         assertEquals("Courier is not create",courierCreateWithNotAllRequiredFieds,response.then().extract().path("message"));
     }
 
 
-    @DisplayName("Если создать пользователя с логином, который уже есть, возвращается ошибка")
     @Test
+    @DisplayName("Если создать пользователя с логином, который уже есть, возвращается ошибка")
     public void courierFailedCreateDoubleLoginTest(){
         String loginDouble = faker.name().username();
         String courierCreateDoubleLogin = "Этот логин уже используется";
-        Courier courier = new Courier(loginDouble, RandomStringUtils.randomAlphabetic(10),RandomStringUtils.randomAlphabetic(10));
+        courier = new Courier(loginDouble, RandomStringUtils.randomAlphabetic(10),RandomStringUtils.randomAlphabetic(10));
         Courier courierWithDoubleLogin = new Courier(loginDouble, RandomStringUtils.randomAlphabetic(10),RandomStringUtils.randomAlphabetic(10));
-        Response response = courierClient.create(courier);
+        response = courierClient.create(courier);
         Response responseCourierWithDoubleLogin = courierClient.create(courierWithDoubleLogin);
         assertEquals("Courier is not create",courierCreateDoubleLogin,responseCourierWithDoubleLogin.then().extract().path("message"));
-        courierClient.delete(courierClient.login(CourierCredentials.from(courier)).then().extract().path("id"));
     }
 
 

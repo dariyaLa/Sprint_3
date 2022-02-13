@@ -21,9 +21,6 @@ public class Courier {
         this.password = password;
     }
 
-    public Courier (String password) {
-        this.password = password;
-    }
 
     public static Courier getRandom(){
         String login = RandomStringUtils.randomAlphabetic(10);
@@ -32,15 +29,32 @@ public class Courier {
         return new Courier(login,password,firstName);
     }
 
-    public static Courier getRandomWithoutLogin(){
-        String password = RandomStringUtils.randomAlphabetic(10);
-        String firstName = RandomStringUtils.randomAlphabetic(10);
-        return new Courier(password,firstName);
-    }
-
     public static Courier getRandomRequiredFields(){
         String login = RandomStringUtils.randomAlphabetic(10);
         String password = RandomStringUtils.randomAlphabetic(10);
         return new Courier(login,password);
+    }
+
+
+    @Override
+    public String toString() {
+        return "Courier{login=" + login + ", password=" + password + ", firstName=" + firstName + "}";
+    }
+
+
+    public void setLogin(String login) {
+        this.login = login;
+    }
+
+    public String getLogin() {
+        return login;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 }
